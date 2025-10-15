@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Group Creator + Chat</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+  body {
+    background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; padding: 30px;
+    overflow: hidden;
+    color: white;
+    position: relative;
+  }
+
+  /* Animated Stars */
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: twinkle 2s infinite alternate;
+  }
+  @keyframes twinkle {
+    0% { opacity: 0.3; transform: scale(0.5);}
+    50% { opacity: 1; transform: scale(1);}
+    100% { opacity: 0.3; transform: scale(0.5);}
+  }
+
+  .container {
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    width: 100%; max-width: 450px;
+    padding: 25px; margin-bottom: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    animation: fadeIn 0.5s ease;
+  }
+  @keyframes fadeIn { from {opacity:0; transform:translateY(20px)} to {opacity:1; transform:translateY(0)} }
+
+  h2 { text-align:center; margin-bottom:15px; color:#f8f8f8; }
+  input, button {
+    width:100%; padding:12px; margin:8px 0; border-radius:8px; border:none; font-size:15px;
+  }
+  input { background: #222; color:white; }
+  button {
+    background: linear-gradient(135deg,#6a11cb,#2575fc); 
+    color:white; cursor:pointer; transition:0.3s;
+  }
+  button:hover { transform: scale(1.05); }
+  .hidden { display:none; }
+
+  .group-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.15));
+    border-left: 4px solid #03a9f4;
+    padding: 15px;
+    border-radius: 12px;
+    margin: 10px 0;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  }
+  .group-card h3 { color: #ffeb3b; margin-bottom:6px; }
+  .join-btn, .request-btn, .chat-btn {
+    margin-top:8px; border:none; border-radius:8px; padding:8px; color:white; cursor:pointer;
+  }
+  .join-btn { background: linear-gradient(135deg,#00bcd4,#8bc34a); }
+  .request-btn { background: linear-gradient(135deg,#ff9800,#ff5722); }
+  .chat-btn { background: linear-gradient(135deg,#9c27b0,#3f51b5); }
+
+  #chatBox {
+    height:350px; overflow-y:auto; background:#111; border-radius:10px; padding:10px; margin-bottom:10px;
+    box-shadow: inset 0 0 8px rgba(255,255,255,0.2);
+  }
+  .msg { margin:5px 0; padding:8px 12px; border-radius:12px; max-width:80%; word-wrap:break-word; animation:pop 0.2s ease; }
+  @keyframes pop { from {transform:scale(0.9);} to {transform:scale(1);} }
+  .self { background: #8e44ad; color:white; margin-left:auto; }
+  .other { background: #3498db; color:white; margin-right:auto; }
+
+  footer { color:white; opacity:0.7; font-size:14px; margin-top:20px; text-align:center; }
+  .back-btn, .logout-btn { background:#f44336; margin-top:5px; }
+</style>
+</head>
+<body>
+
+<!-- Animated Stars -->
+<script>
+for(let i=0;i<100;i++){
+  const star = document.createElement("div");
+  star.className = "star";
+  star.style.width = star.style.height = Math.random()*3 + 1 + "px";
+  star.style.top = Math.random()*100 + "%";
+  star.style.left = Math.random()*100 + "%";
+  document.body.appendChild(star);
+}
+</script>
+
+<!-- Login / Signup -->
+<div class="container" id="authSlide">
+  <h2>Login / Signup</h2>
+  <input type="email" id="email" placeholder="Enter KIT Email (@kit.ac.in)">
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="signup()">Sign Up</button>
+  <button onclick="login()">Login</button>
+</div>
+
+<!-- Student Details -->
+<div class="container hidden" id="detailsSlide">
+  <h2>Student Details</h2>
+  <input type="text" id="name" placeholder="Full Name">
+  <input type="text" id="branch" placeholder="Branch">
+  <input type="text" id="course" placeholder="Course">
+  <button onclick="saveDetails()">Next</button>
+  <button class="back-btn" onclick="show('authSlide')">⬅ Back</button>
+</div>
+
+<!-- Create Group -->
+<div class="container hidden" id="groupSlide">
+  <h2>Create Group</h2>
+  <input type="text" id="purpose" placeholder="Purpose of Group">
+  <input type="number" id="membersReq" placeholder="Total Members Required">
+  <input type="number" id="membersNow" placeholder="Current Members">
+  <input type="text" id="skills" placeholder="Skills Required">
+  <input type="text" id="contact" placeholder="Contact Info">
+  <button onclick="createGroup()">Submit</button>
+  <button class="back-btn" onclick="show('groupsListSlide')">⬅ Back</button>
+</div>
+
+<!-- Groups List -->
+<div class="container hidden" id="groupsListSlide">
+  <h2>All Groups</h2>
+  <input type="text" id="searchBar" placeholder="🔍 Search groups..." onkeyup="filterGroups()">
+  <div id="groupsList"></div>
+  <button onclick="show('groupSlide')">➕ Create Another Group</button>
+  <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  <button class="logout-btn" style="background:#e91e63;" onclick="deleteAccount()">❌ Delete Account</button>
+</div>
+
+<!-- Chat Window -->
+<div class="container hidden" id="chatSlide">
+  <h2 id="chatTitle">Group Chat</h2>
+  <div id="chatBox"></div>
+  <input type="text" id="chatInput" placeholder="Type a message...">
+  <button onclick="sendMessage()">Send</button>
+  <button style="background:#f44336;" onclick="closeChat()">Close Chat</button>
+</div>
+
+<footer>💬 Built with ❤️ by 4 Idiot's 🪐</footer>
+
+<script>
+let users = JSON.parse(localStorage.getItem("users")) || {};
+let groups = JSON.parse(localStorage.getItem("groups")) || [];
+let requests = JSON.parse(localStorage.getItem("requests")) || {};
+let activeGroupIndex = null;
+let loggedInUser = localStorage.getItem("loggedIn");
+
+function signup() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  if (!email.endsWith("@kit.ac.in")) return alert("Only @kit.ac.in emails allowed!");
+  if (users[email]) return alert("Account already exists!");
+  users[email] = { password };
+  localStorage.setItem("users", JSON.stringify(users));
+  alert("Signup successful! Now login.");
+}
+
+function login() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  if (users[email] && users[email].password === password) {
+    loggedInUser = email;
+    localStorage.setItem("loggedIn", email);
+    show("detailsSlide");
+  } else alert("Invalid credentials!");
+}
+
+function saveDetails() {
+  const name = document.getElementById("name").value.trim();
+  const branch = document.getElementById("branch").value.trim();
+  const course = document.getElementById("course").value.trim();
+  if (!name || !branch || !course) return alert("Please fill all details!");
+  localStorage.setItem("userDetails", JSON.stringify({ name, branch, course }));
+  show("groupSlide");
+}
+
+function createGroup() {
+  const purpose = document.getElementById("purpose").value;
+  const membersReq = parseInt(document.getElementById("membersReq").value);
+  const membersNow = parseInt(document.getElementById("membersNow").value);
+  const skills = document.getElementById("skills").value;
+  const contact = document.getElementById("contact").value;
+  if (!purpose || !membersReq || !membersNow || !skills || !contact) return alert("Fill all fields!");
+  const details = JSON.parse(localStorage.getItem("userDetails"));
+  const newGroup = { creator: details.name, branch: details.branch, course: details.course, purpose, membersNow, membersReq, skills, contact };
+  groups.push(newGroup);
+  localStorage.setItem("groups", JSON.stringify(groups));
+  show("groupsListSlide");
+  displayGroups();
+}
+
+function displayGroups() {
+  const list = document.getElementById("groupsList");
+  list.innerHTML = "";
+  const user = JSON.parse(localStorage.getItem("userDetails"));
+  groups.forEach((g, i) => {
+    const div = document.createElement("div");
+    div.className = "group-card";
+    const userRequested = (requests[`group_${i}`] || []).includes(user.name);
+    div.innerHTML = `
+      <h3>${g.purpose}</h3>
+      <p><b>Creator:</b> ${g.creator} (${g.branch}, ${g.course})</p>
+      <p><b>Members:</b> ${g.membersNow}/${g.membersReq}</p>
+      <p><b>Skills:</b> ${g.skills}</p>
+      <p><b>Contact:</b> ${g.contact}</p>
+      ${g.membersNow >= g.membersReq ? `<button disabled>Full</button>` :
+        userRequested ? `<button disabled>Requested</button>` :
+        `<button class="request-btn" onclick="requestJoin(${i})">Request Join</button>`
+      }
+      <button class="chat-btn" onclick="openChat(${i})">💬 Chat</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function filterGroups() {
+  const q = document.getElementById("searchBar").value.toLowerCase();
+  const list = document.getElementById("groupsList");
+  list.innerHTML = "";
+  const user = JSON.parse(localStorage.getItem("userDetails"));
+  groups.filter(g =>
+    g.purpose.toLowerCase().includes(q) || g.skills.toLowerCase().includes(q) ||
+    g.branch.toLowerCase().includes(q) || g.course.toLowerCase().includes(q)
+  ).forEach((g, i) => {
+    const div = document.createElement("div");
+    div.className = "group-card";
+    const userRequested = (requests[`group_${i}`] || []).includes(user.name);
+    div.innerHTML = `
+      <h3>${g.purpose}</h3>
+      <p><b>Creator:</b> ${g.creator} (${g.branch}, ${g.course})</p>
+      <p><b>Members:</b> ${g.membersNow}/${g.membersReq}</p>
+      ${g.membersNow >= g.membersReq ? `<button disabled>Full</button>` :
+        userRequested ? `<button disabled>Requested</button>` :
+        `<button class="request-btn" onclick="requestJoin(${i})">Request Join</button>`}
+      <button class="chat-btn" onclick="openChat(${i})">💬 Chat</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function requestJoin(i) {
+  const user = JSON.parse(localStorage.getItem("userDetails"));
+  const chatId = `group_${i}`;
+  if (!requests[chatId]) requests[chatId] = [];
+  requests[chatId].push(user.name);
+  localStorage.setItem("requests", JSON.stringify(requests));
+  displayGroups();
+  alert("Join request sent!");
+}
+
+// Chat system
+function openChat(i) {
+  activeGroupIndex = i;
+  const group = groups[i];
+  show("chatSlide");
+  document.getElementById("chatTitle").innerText = `💬 Chat - ${group.purpose}`;
+  displayMessages();
+}
+
+function closeChat() {
+  activeGroupIndex = null;
+  show("groupsListSlide");
+}
+
+function sendMessage() {
+  const input = document.getElementById("chatInput");
+  const msg = input.value.trim();
+  if (!msg) return;
+  const user = JSON.parse(localStorage.getItem("userDetails"));
+  const allChats = JSON.parse(localStorage.getItem("chats")) || {};
+  const chatId = `group_${activeGroupIndex}`;
+  if (!allChats[chatId]) allChats[chatId] = [];
+  allChats[chatId].push({ sender: user.name, text: msg, time: Date.now() });
+  localStorage.setItem("chats", JSON.stringify(allChats));
+  input.value = "";
+  displayMessages();
+}
+
+function displayMessages() {
+  const chatBox = document.getElementById("chatBox");
+  const allChats = JSON.parse(localStorage.getItem("chats")) || {};
+  const chatId = `group_${activeGroupIndex}`;
+  chatBox.innerHTML = "";
+  const user = JSON.parse(localStorage.getItem("userDetails"));
+  (allChats[chatId] || []).forEach(m => {
+    const div = document.createElement("div");
+    div.className = "msg " + (m.sender === user.name ? "self" : "other");
+    div.innerText = `${m.sender}: ${m.text}`;
+    chatBox.appendChild(div);
+  });
+  chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+}
+
+function logout() {
+  localStorage.removeItem("loggedIn");
+  localStorage.removeItem("userDetails");
+  show("authSlide");
+}
+
+// ✅ Delete Account Function
+function deleteAccount() {
+  const email = loggedInUser;
+  if (!email) return alert("No user logged in!");
+  if (confirm("⚠️ Are you sure you want to delete your account? This cannot be undone.")) {
+    delete users[email];
+    localStorage.setItem("users", JSON.stringify(users));
+    localStorage.removeItem("userDetails");
+    localStorage.removeItem("loggedIn");
+    loggedInUser = null;
+    Object.keys(requests).forEach(groupId => {
+      requests[groupId] = requests[groupId].filter(u => u !== email);
+    });
+    localStorage.setItem("requests", JSON.stringify(requests));
+    alert("Your account has been deleted. You can create a new account now.");
+    show("authSlide");
+  }
+}
+
+function show(id) {
+  ["authSlide","detailsSlide","groupSlide","groupsListSlide","chatSlide"].forEach(x => 
+    document.getElementById(x).classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
+  if (id === "groupsListSlide") displayGroups();
+}
+
+window.onload = function() {
+  const loggedIn = localStorage.getItem("loggedIn");
+  const userDetails = JSON.parse(localStorage.getItem("userDetails"));
+  if (loggedIn && userDetails) show("groupsListSlide");
+}
+
+// Enter key support for chat
+document.getElementById("chatInput").addEventListener("keypress", function(e){
+  if(e.key === "Enter") sendMessage();
+});
+</script>
+
+</body>
+</html>
