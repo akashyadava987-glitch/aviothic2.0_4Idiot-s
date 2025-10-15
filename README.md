@@ -23,3 +23,13 @@ Group Finder is a front-end based project built with **HTML, CSS, and JavaScript
 ---
 
 ## 📂 Project Structure
+group-finder/
+│
+├── index.html          # Landing + Signup + Login page
+├── profile.html        # User profile page
+├── groups.html         # Groups list, create & join page
+├── style.css           # Main stylesheet
+├── script.js           # App logic (authentication + groups + storage)
+│
+├── README.md           # Project documentation
+
